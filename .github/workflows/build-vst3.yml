@@ -1,0 +1,39 @@
+
+name: Build FRiKKTUNE VST3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Visual Studio
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure project
+        run: >
+          cmake -S . -B build-vst3
+          -A x64
+          -DFRIKKTUNE_BUILD_PLUGIN=ON
+          -DFRIKKTUNE_BUILD_DETECTOR_TESTS=ON
+          -DFRIKKTUNE_BUILD_SHIFTER_TESTS=ON
+
+      - name: Build plugin
+        run: cmake --build build-vst3 --config Release --parallel 2
+
+      - name: Run tests
+        run: ctest --test-dir build-vst3 -C Release --output-on-failure
+
+      - name: Upload VST3
+        uses: actions/upload-artifact@v4
+        with:
+          name: FRiKKTUNE-VST3-Windows
+          path: build-vst3/**/VST3/**
+          if-no-files-found: warn
